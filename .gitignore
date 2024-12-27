@@ -1,0 +1,14 @@
+# Logs
+logs
+*.log
+
+# Editor config
+.vscode/*
+!.vscode/extensions.json
+
+# Python stuff
+__pycache__/
+.venv
+
+# Handsynth output files
+img

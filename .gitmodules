@@ -1,5 +1,5 @@
-[submodule "handwriting-synthesis"]
-	path = handwriting-synthesis
+[submodule "handsynth"]
+	path = server/handsynth
 	url = https://github.com/sjvasquez/handwriting-synthesis.git
 [submodule "blot"]
 	path = blot
