@@ -4,3 +4,6 @@
 [submodule "blot"]
 	path = blot
 	url = https://github.com/hackclub/blot.git
+[submodule "OpenCV-Document-Scanner"]
+	path = OpenCV-Document-Scanner
+	url = https://github.com/andrewdcampbell/OpenCV-Document-Scanner.git
