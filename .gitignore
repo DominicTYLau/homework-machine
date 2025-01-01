@@ -1,10 +1,24 @@
 # Logs
 logs
 *.log
+npm-debug.log*
 
-# Editor config
+# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Client stuff
+node_modules
+dist
+dist-ssr
+*.local
 
 # Python stuff
 __pycache__/
