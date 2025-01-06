@@ -26,3 +26,7 @@ __pycache__/
 
 # Handsynth output files
 img
+
+# Temporary messing-around files
+test*
+debug*

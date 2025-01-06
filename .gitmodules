@@ -2,5 +2,5 @@
 	path = server/handsynth
 	url = https://github.com/sjvasquez/handwriting-synthesis.git
 [submodule "blot"]
-	path = blot
+	path = client/src/blot
 	url = https://github.com/hackclub/blot.git

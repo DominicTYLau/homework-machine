@@ -1,4 +1,6 @@
 fastapi
+pydantic
+snowflake-id
 uvicorn[standard]
 
 # Handsynth deps
