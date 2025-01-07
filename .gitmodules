@@ -1,9 +1,12 @@
 [submodule "handsynth"]
 	path = server/handsynth
-	url = https://github.com/sjvasquez/handwriting-synthesis.git
+	url = https://github.com/Objectivitix/handwriting-synthesis.git
+	branch = hw-compat
 [submodule "blot"]
 	path = client/src/blot
-	url = https://github.com/hackclub/blot.git
+	url = https://github.com/Objectivitix/blot.git
+	branch = hw-compat
 [submodule "scanner"]
 	path = server/scanner
-	url = https://github.com/andrewdcampbell/OpenCV-Document-Scanner/
+	url = https://github.com/Objectivitix/OpenCV-Document-Scanner.git
+	branch = hw-compat
