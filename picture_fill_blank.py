@@ -73,13 +73,13 @@ def main():
                 subprocess.run(command, check=True)
                 print(f"Executed: {' '.join(command)}")
 
-                # Run chatgpt.py on the captured image
-                # try:
-                #     command = ["python", "chatgpt.py"]
-                #     subprocess.run(command, check=True)
-                #     print(f"Executed: {' '.join(command)}")
-                # except subprocess.CalledProcessError as e:
-                #     print(f"Error occurred while running chatgpt.py: {e}")
+                # Run fill_blank.py on the captured image
+                try:
+                    command = ["python", "fill_blank.py"]
+                    subprocess.run(command, check=True)
+                    print(f"Executed: {' '.join(command)}")
+                except subprocess.CalledProcessError as e:
+                    print(f"Error occurred while running fill_blank.py: {e}")
             except subprocess.CalledProcessError as e:
                 print(f"Error occurred while running scan.py: {e}")
 
