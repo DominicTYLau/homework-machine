@@ -1,9 +1,13 @@
+import os
+import time
+
 import cv2
 import numpy as np
-import time
 
 from scanner.scan import DocScanner
 from chatgpt import query_gpt
+
+OUTPUT_DIR = "scanner_output"
 
 
 def capture_image(camera, filename):
@@ -26,6 +30,10 @@ def detect_change(normal_image, current_frame, threshold=50):
 
 
 def main():
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+        print(f"Created ${OUTPUT_DIR} directory.")
+
     camera = cv2.VideoCapture(0)  # Open the default camera
 
     if not camera.isOpened():
@@ -39,7 +47,7 @@ def main():
         camera.release()
         return
 
-    normal_image_path = "normal_image.jpg"
+    normal_image_path = os.path.join(OUTPUT_DIR, "normal_image.jpg")
     cv2.imwrite(normal_image_path, normal_frame)
     print(f"Normal image saved as {normal_image_path}. Now introduce a piece of paper.")
 
@@ -51,6 +59,7 @@ def main():
 
         if detect_change(normal_frame, frame):
             print("Paper detected! Countdown to capture:")
+
             for i in range(5, 0, -1):
                 print(i)
                 ret, frame = camera.read()  # Continuously read from the camera
@@ -61,14 +70,13 @@ def main():
                 cv2.waitKey(1)  # Allow OpenCV to process window events
                 time.sleep(1)  # Wait for one second
 
-                captured_image_path = "paper_image.jpg"
-                capture_image(camera, captured_image_path)
-                cv2.destroyWindow("Countdown to Capture")  # Close countdown window
+            captured_image_path = os.path.join(OUTPUT_DIR, "paper_image.jpg")
+            capture_image(camera, captured_image_path)
 
             # Run scan.py on the captured image
-            DocScanner().scan(captured_image_path)
+            DocScanner(output_dir=OUTPUT_DIR).scan(captured_image_path, output_basename="processed_image.jpg")
 
-            # # Run chatgpt.py on the captured image
+            # Run chatgpt.py on the captured image
             # print(query_gpt())
 
             break

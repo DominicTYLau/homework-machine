@@ -38,7 +38,7 @@ def gen_svg_image(lines: List[str], *, bias: float = 0.5, style: int = 0, stroke
     print("Generating SVG image of handwriting...")
 
     lines_n = len(lines)
-    output_file_path = f"img/output_{next(snow_gen)}.svg"
+    output_file_path = os.path.join(OUTPUT_DIR, f"output_{next(snow_gen)}.svg")
 
     hand.write(
         filename=output_file_path,
