@@ -9,7 +9,7 @@ from snowflake import SnowflakeGenerator
 
 from handsynth.demo import Hand
 
-OUTPUT_DIR = "img"
+OUTPUT_DIR = "handsynth_output"
 
 app = FastAPI()
 

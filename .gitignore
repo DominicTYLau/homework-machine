@@ -25,7 +25,10 @@ __pycache__/
 .venv
 
 # Handsynth output files
-img
+handsynth_output
+
+# Scanner output files
+scanner_output
 
 # Temporary messing-around files
 test*
