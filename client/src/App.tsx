@@ -157,17 +157,16 @@ const App = () => {
 
       const resizedPolylines = toolkit.scalePolylinesToDimension(
         JSON.stringify(result),
-        100,
-        100,
+        125,
+        125,
         true,
       );
 
       // Convert resizedPolylines to a 3D array by wrapping each 2D polyline
 
-      setPolylines(resizedPolylines);
-
       const resizedPolylines3D = JSON.parse(resizedPolylines);
 
+      setPolylines(resizedPolylines3D);
       draw(resizedPolylines3D);
 
       setError("");
@@ -183,7 +182,7 @@ const App = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, line_width: 52 }),
       });
 
       const data = await response.json();
@@ -312,7 +311,7 @@ const App = () => {
         <div className="output-container">
           <h3>Generated Code:</h3>
           <pre className="code-block">
-            {`const polylines = ${JSON.stringify(polylines, null, 2)};`}
+            {`const polylines = ${JSON.stringify(polylines)};`}
           </pre>
         </div>
       )}
