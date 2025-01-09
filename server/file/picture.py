@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 from scanner.scan import DocScanner
-from chatgpt import query_gpt
+from server.file.chatgpt import query_gpt
 
 OUTPUT_DIR = "scanner_output"
 
@@ -29,7 +29,7 @@ def detect_change(normal_image, current_frame, threshold=50):
     return change_ratio > 100  # Adjust this threshold as needed
 
 
-def main():
+def captured_image():
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
         print(f"Created ${OUTPUT_DIR} directory.")
@@ -80,15 +80,3 @@ def main():
             # print(query_gpt())
 
             break
-
-        cv2.imshow("Live Feed", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):  # Press 'q' to quit the program
-            print("Exiting program.")
-            break
-
-    camera.release()
-    cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    main()

@@ -6,6 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from snowflake import SnowflakeGenerator
+from file import chatgpt
+from scanner.scan import DocScanner
+
 
 from handsynth.demo import Hand
 
@@ -51,13 +54,6 @@ def gen_svg_image(lines: List[str], *, bias: float = 0.5, style: int = 0, stroke
 
     return output_file_path
 
-
-# @app.get("/generate-handwriting")
-# def generate_handwriting():
-#     filename = image()
-#     return FileResponse(filename, media_type='image/svg+xml', headers={"Content-Disposition": f"attachment; filename={os.path.basename(filename)}"})
-
-
 @app.get("/")
 def index():
     return {"yay": "Things are looking up!"}
@@ -67,8 +63,21 @@ def index():
 def synthesize(inp: SynthesisInput):
     with open(gen_svg_image([inp.text], bias=1), "r", encoding="utf-8") as f:
         svg_content = f.read()
-
     return {"svg": svg_content}
+
+@app.post("/submit-frame")
+async def submit_frame(image: UploadFile):
+    # Grayscale and make the image look better using scanner import
+    DocScanner(output_dir="scanner_output").scan(UploadFile, output_basename="processed_image.jpg")
+
+    # Call ChatGPT to get the answers
+    answers = chatgpt.query_gpt()
+
+    # Synthesize the answers
+    svg_content = gen_svg_image(answers, bias=1)
+
+    return {svg_content}
+
 
 
 if __name__ == "__main__":
