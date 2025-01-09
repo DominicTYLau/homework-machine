@@ -54,15 +54,19 @@ const App = () => {
   const convertToPolylines = (svgString: string) => {
     try {
       const result = toolkit.svgToPolylines(svgString);
+
       const resizedPolylines = toolkit.scalePolylinesToDimension(
         JSON.stringify(result),
-        100,
-        100,
-        true
+        125,
+        125,
+        true,
       );
+
       const parsedPolylines = JSON.parse(resizedPolylines);
+
       setPolylines(parsedPolylines);
       draw(parsedPolylines);
+
       setError("");
     } catch (err) {
       setError(`SVG conversion error: ${(err as Error).message}`);
@@ -73,6 +77,7 @@ const App = () => {
   const uploadFrame = useCallback(async (file: File) => {
     const formData = new FormData();
     formData.append("image", file);
+    formData.append("line_width", 52);
 
     try {
       const response = await fetch(`http://127.0.0.1:8000/submit-frame`, {
@@ -171,8 +176,7 @@ const App = () => {
   return (
     <div className="container">
     <div className="top-right-toggle">
-
-        <button         className="button warning-button" onClick={connectionStatus === "Connected" ? disconnect : connect}>
+        <button className="button warning-button" onClick={connectionStatus === "Connected" ? disconnect : connect}>
           {connectionStatus === "Connected" ? "Disconnect" : "Connect"}
         </button>
     </div>
