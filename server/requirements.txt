@@ -10,3 +10,6 @@ uvicorn[standard]
 
 # Scanner deps
 -r ./scanner/requirements.txt
+
+# Development deps
+black
