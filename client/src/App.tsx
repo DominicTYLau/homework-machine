@@ -1,11 +1,9 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import Webcam from "react-webcam";
 import { toolkit } from "./blot/src/drawingToolkit/toolkit.js";
 import { createHaxidraw } from "./blot/src/haxidraw/createHaxidraw.js";
 import { createWebSerialBuffer } from "./blot/src/haxidraw/createWebSerialBuffer.js";
 import "./App.css";
-
-type Polylines = number[][][];
 
 let haxidraw: any = null;
 
@@ -14,12 +12,14 @@ const App = () => {
   const [polylines, setPolylines] = useState<Polylines | null>(null);
   const [svgContent, setSvgContent] = useState<string>("");
   const [error, setError] = useState<string>("");
-  const [connectionStatus, setConnectionStatus] = useState<string>("Disconnected");
-  const [countdown, setCountdown] = useState<number | null>(null);
+  const [connectionStatus, setConnectionStatus] =
+    useState<string>("Disconnected");
+  const [countdown, setCountdown] = useState<number>(0);
 
   const webcamRef = useRef<Webcam>(null);
 
-  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  const sleep = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
   // Handle Drawing
   const draw = async (lines: Polylines) => {
@@ -61,6 +61,7 @@ const App = () => {
         125,
         true,
       );
+      console.log(`const polylines = ${resizedPolylines};`);
 
       const parsedPolylines = JSON.parse(resizedPolylines);
 
@@ -74,10 +75,10 @@ const App = () => {
   };
 
   // Upload to server
-  const uploadFrame = useCallback(async (file: File) => {
+  const uploadFrame = async (file: File) => {
     const formData = new FormData();
     formData.append("image", file);
-    formData.append("line_width", 52);
+    formData.append("line_width", "52");
 
     try {
       const response = await fetch(`http://127.0.0.1:8000/submit-frame`, {
@@ -88,20 +89,22 @@ const App = () => {
       if (!response.ok) throw new Error("Failed to upload image to server.");
 
       const data = await response.json();
+
       if (data.svg) {
         const parser = new DOMParser();
         const document = parser.parseFromString(data.svg, "image/svg+xml");
-        const svg = document.querySelector("svg");
-        if (!svg) throw new Error("Invalid SVG data.");
 
-        const rect = svg.querySelector("rect");
-        if (rect) {
-          svg.setAttribute("width", rect.getAttribute("width")!);
-          svg.setAttribute("height", rect.getAttribute("height")!);
-          svg.removeChild(rect);
-        }
+        const svg = document.querySelector("svg")!;
+        const rect = svg.querySelector("rect")!;
 
+        // fix sizing and remove background rect
+        svg.setAttribute("width", rect.getAttribute("width")!);
+        svg.setAttribute("height", rect.getAttribute("height")!);
+        svg.removeChild(rect);
+
+        // convert SVG back to a string
         const cleanSvgString = new XMLSerializer().serializeToString(svg);
+
         setSvgContent(cleanSvgString);
         convertToPolylines(cleanSvgString);
       } else {
@@ -110,23 +113,21 @@ const App = () => {
     } catch (err) {
       setError(`Upload error: ${(err as Error).message}`);
     }
-  }, []);
+  };
 
-    // Handle Compute with Countdown
-    const handleCompute = () => {
-      setCountdown(5);
-      const interval = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev === null || prev <= 1) {
-            clearInterval(interval);
-            setCountdown(null);
-            takeSnapshotAndUpload();
-          }
-          return prev! - 1;
-        });
-      }, 1000);
-    };
-  
+  // Handle Compute with Countdown
+  const handleCompute = () => {
+    setCountdown(5);
+
+    const interval = setInterval(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      takeSnapshotAndUpload();
+    }, 5000);
+  };
 
   // Take Snapshot and Upload
   const takeSnapshotAndUpload = async () => {
@@ -135,7 +136,9 @@ const App = () => {
       if (imageSrc) {
         const byteString = atob(imageSrc.split(",")[1]);
         const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0];
-        const arrayBuffer = Uint8Array.from(byteString, (char) => char.charCodeAt(0));
+        const arrayBuffer = Uint8Array.from(byteString, (char) =>
+          char.charCodeAt(0),
+        );
         const blob = new Blob([arrayBuffer], { type: mimeString });
         const file = new File([blob], "snapshot.png", { type: mimeString });
         await uploadFrame(file);
@@ -151,7 +154,9 @@ const App = () => {
     }
 
     try {
-      const port = await navigator.serial.requestPort({});
+      const port = await navigator.serial.requestPort(
+        {} as SerialPortRequestOptions,
+      );
       const comsBuffer = await createWebSerialBuffer(port);
       haxidraw = await createHaxidraw(comsBuffer);
       setConnectionStatus("Connected");
@@ -173,43 +178,54 @@ const App = () => {
     setConnectionStatus("Disconnected");
   };
 
+  // Disconnect on component mount
+  useEffect(() => {
+    disconnect();
+  }, []);
+
   return (
     <div className="container">
-    <div className="top-right-toggle">
-        <button className="button warning-button" onClick={connectionStatus === "Connected" ? disconnect : connect}>
+      <div className="top-right-toggle">
+        <button
+          className="button warning-button"
+          onClick={connectionStatus === "Connected" ? disconnect : connect}
+        >
           {connectionStatus === "Connected" ? "Disconnect" : "Connect"}
         </button>
-    </div>
-
-    <div className="top-left-name">
-      <button className="button name-button" onClick={() => alert("Name Button")}>
-        Calo and Dominic
-      </button>
-    </div>
-
-    <div className="innerBox">
-      <div className="webcam-container">
-        <Webcam
-          audio={false}
-          height={600}
-          width={600}
-          ref={webcamRef}
-          screenshotFormat="image/png"
-        />
-        {countdown !== null && (
-          <div className="countdown-overlay">
-            <h1>{countdown}</h1>
-          </div>
-        )}
       </div>
 
-      <button className="button compute-button" onClick={handleCompute}>
-        Compute
-      </button>
+      <div className="top-left-name">
+        <button
+          className="button name-button"
+          onClick={() => alert("Name Button")}
+        >
+          Calo and Dominic
+        </button>
+      </div>
 
-      <h1>THE HOMEWORK MACHINE</h1>
+      <div className="innerBox">
+        <div className="webcam-container">
+          <Webcam
+            audio={false}
+            height={600}
+            width={600}
+            ref={webcamRef}
+            screenshotFormat="image/png"
+          />
+          {countdown !== 0 && (
+            <div className="countdown-overlay">
+              <h1>{countdown}</h1>
+            </div>
+          )}
+        </div>
+
+        <button className="button compute-button" onClick={handleCompute}>
+          Compute
+        </button>
+
+        <h1>THE HOMEWORK MACHINE</h1>
+      </div>
     </div>
-  </div>
   );
 };
 

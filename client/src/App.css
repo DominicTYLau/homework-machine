@@ -18,6 +18,8 @@ body {
   align-items: center;
   overflow: hidden;
   background-image: url("image.png");
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 /* Inner box styling */
@@ -53,14 +55,16 @@ h1 {
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  transition: transform 0.3s ease-in-out, background 0.3s ease-in-out;
+  transition:
+    transform 0.3s ease-in-out,
+    background-color 0.3s ease-in-out;
   text-transform: uppercase;
 }
 
 /* Hover effect for buttons */
 .button:hover {
   transform: scale(1.1);
-  background: #d83600;
+  background-color: #d83600;
 }
 
 /* Specific button styles */
@@ -68,7 +72,7 @@ h1 {
   position: absolute;
   top: 20px;
   right: 20px;
-  background: #ff4500;
+  background-color: #ff4500;
   color: white;
   box-shadow: 0 0 10px rgba(255, 69, 0, 0.8);
 }
@@ -77,13 +81,13 @@ h1 {
   position: absolute;
   top: 20px;
   left: 20px;
-  background: #444;
+  background-color: #444;
   color: white;
 }
 
 .compute-button {
   margin-top: 2rem;
-  background: #ff4500;
+  background-color: #ff4500;
   color: #fff;
   box-shadow: 0 5px 15px rgba(255, 69, 0, 0.6);
 }
