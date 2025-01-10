@@ -5,6 +5,9 @@ python-multipart
 snowflake-id
 uvicorn[standard]
 
+# Fix protobuf bug
+protobuf==3.20.0
+
 # Handsynth deps
 -r ./handsynth/requirements.txt
 
