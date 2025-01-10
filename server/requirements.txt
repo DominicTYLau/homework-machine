@@ -1,6 +1,7 @@
 fastapi
 openai>=1.39.0
 pydantic
+python-multipart
 snowflake-id
 uvicorn[standard]
 

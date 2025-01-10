@@ -12,7 +12,7 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 
-def query_gpt(image_path = "paper_image.jpg"):
+def query_gpt(image_path = "scanner_output/processed_image.jpg"):
     # Getting the base64 string
     base64_image = encode_image(image_path)
 
