@@ -12,9 +12,11 @@ const App = () => {
   const [polylines, setPolylines] = useState<Polylines | null>(null);
   const [svgContent, setSvgContent] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [resultData, setResultData] = useState<string>(""); // State to store solve result
   const [connectionStatus, setConnectionStatus] =
     useState<string>("Disconnected");
   const [countdown, setCountdown] = useState<number>(0);
+  const [hasResult, setHasResult] = useState<boolean>(false);
 
   const webcamRef = useRef<Webcam>(null);
 
@@ -141,10 +143,99 @@ const App = () => {
         );
         const blob = new Blob([arrayBuffer], { type: mimeString });
         const file = new File([blob], "snapshot.png", { type: mimeString });
-        await uploadFrame(file);
+        await solve(file);
       }
     }
   };
+
+  const solve = async (file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("line_width", "52");
+
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/solve`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Failed to upload image to server.");
+
+      const data = await response.json();
+
+      console.log(data.result);
+
+      if (data.result) {
+        setResultData(data.result); // Save result to state
+
+        // Change the CSS
+        setHasResult(true);
+
+      } else {
+        throw new Error("Result data is missing.");
+      }
+    } catch (err) {
+      setError(`Upload error: ${(err as Error).message}`);
+    }
+  };
+
+  // Synthesize and print on blot
+  const launchButton = async () => {
+    const textarea = document.querySelector(".result-input") as HTMLTextAreaElement;
+
+    if (!textarea) {
+      console.error("Textarea with class 'result-input' not found.");
+      return;
+    }
+  
+    // Extract the value from the textarea and create the payload
+    const payload = {
+      text: textarea.value,
+      bias: 1,        // You can adjust these values
+      style: 0,       // according to your requirements
+      line_width: 70,
+    };
+  
+    try {
+      const response = await fetch("http://127.0.0.1:8000/synthesize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error("Failed to upload image to server.");
+
+      const data = await response.json();
+
+      if (data.svg) {
+        const parser = new DOMParser();
+        const document = parser.parseFromString(data.svg, "image/svg+xml");
+
+        const svg = document.querySelector("svg")!;
+        const rect = svg.querySelector("rect")!;
+
+        // fix sizing and remove background rect
+        svg.setAttribute("width", rect.getAttribute("width")!);
+        svg.setAttribute("height", rect.getAttribute("height")!);
+        svg.removeChild(rect);
+
+        // convert SVG back to a string
+        const cleanSvgString = new XMLSerializer().serializeToString(svg);
+
+        setSvgContent(cleanSvgString);
+        convertToPolylines(cleanSvgString);
+
+        setHasResult(false);
+      } else {
+        throw new Error("SVG generation failed.");
+      }
+    } catch (err) {
+      setError(`Upload error: ${(err as Error).message}`);
+    }
+    
+  }
 
   // Connect to Haxidraw
   const connect = async () => {
@@ -203,29 +294,51 @@ const App = () => {
         </button>
       </div>
 
-      <div className="innerBox">
-        <div className="webcam-container">
-          <Webcam
-            audio={false}
-            height={600}
-            width={600}
-            ref={webcamRef}
-            screenshotFormat="image/png"
-          />
-          {countdown !== 0 && (
-            <div className="countdown-overlay">
-              <h1>{countdown}</h1>
+        <div className="innerBox">
+          <div className="everything">
+          <div className={"capture-container" + hasResult}>
+            <div className="webcam-container">
+              <Webcam
+                audio={false}
+                height={600}
+                width={600}
+                ref={webcamRef}
+                screenshotFormat="image/png"
+              />
+              {countdown !== 0 && (
+                <div className="countdown-overlay">
+                  <h1>{countdown}</h1>
+                </div>
+              )}
             </div>
-          )}
+
+            <button className="button compute-button" onClick={handleCompute}>
+              Compute
+            </button>
+            </div>
+
+            <div className={"result-container"+hasResult}>
+              <label htmlFor="result-input">Solve Result:</label>
+              <textarea
+                id="result-input"
+                value={resultData}
+                onChange={(e) => setResultData(e.target.value)} // Allow user edits
+                className="result-input"
+              />
+
+              <button className="button launch-button" onClick={launchButton}>
+              Launch
+            </button>   
+            </div>
+
+            </div>
+          <h1>THE HOMEWORK MACHINE</h1>
         </div>
+            
 
-        <button className="button compute-button" onClick={handleCompute}>
-          Compute
-        </button>
 
-        <h1>THE HOMEWORK MACHINE</h1>
       </div>
-    </div>
+      
   );
 };
 

@@ -3,6 +3,7 @@ import shutil
 from typing import List
 
 from fastapi import FastAPI, File, Form, UploadFile
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -12,7 +13,7 @@ from scanner.scan import DocScanner
 
 
 import preprocessing
-from handsynth.demo import Hand
+# from handsynth.demo import Hand
 
 OUTPUT_DIR = "handsynth_output"
 
@@ -87,7 +88,9 @@ def index():
 
 @app.post("/synthesize")
 def synthesize(inp: SynthesisInput):
-    return _synthesize(**dict(inp))
+    # return _synthesize(**dict(inp))
+    print("good")
+    return {"yay": "Things are looking up!"}
 
 
 @app.post("/submit-frame")
@@ -106,7 +109,21 @@ async def submit_frame(image: UploadFile = File(...), line_width: int = Form(70)
     # Synthesize and return handwriting
     return _synthesize(answers, 1, 0, line_width)
 
+@app.post("/solve")
+async def solve(image: UploadFile = File(...), line_width: int = Form(70)):
+    # Save image to scanner_output
+    with open("scanner_output/paper_image.jpg", "wb") as file:
+        shutil.copyfileobj(image.file, file)
 
+    # Grayscale and make the image look better using scanner import
+    DocScanner(output_dir="scanner_output").scan("scanner_output/paper_image.jpg", output_basename="processed_image.jpg")
+
+    # Call ChatGPT to get the answers
+    # answers = chatgpt.query_gpt()
+    answers = """1. According to Gay-Lussac's Law, the pressure of a gas increases with temperature if the volume is constant. In a hot car, the pressure inside the can increases, potentially causing it to burst."""
+
+    # Synthesize and return handwriting
+    return JSONResponse(content={"result": answers})
 
 if __name__ == "__main__":
     import uvicorn
