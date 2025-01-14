@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from snowflake import SnowflakeGenerator
-from file import chatgpt
+# from file import chatgpt
 from scanner.scan import DocScanner
 
 
@@ -27,7 +27,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-hand = Hand(max_line_length=100)
+# hand = Hand(max_line_length=100)
 
 snow_gen = SnowflakeGenerator(0)
 
@@ -89,8 +89,7 @@ def index():
 @app.post("/synthesize")
 def synthesize(inp: SynthesisInput):
     # return _synthesize(**dict(inp))
-    print("good")
-    return {"yay": "Things are looking up!"}
+    return {"svg": svg_content}
 
 
 @app.post("/submit-frame")
