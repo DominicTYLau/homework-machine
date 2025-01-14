@@ -23,6 +23,7 @@ dist-ssr
 # Python stuff
 __pycache__/
 .venv
+venv
 
 # Handsynth output files
 handsynth_output
