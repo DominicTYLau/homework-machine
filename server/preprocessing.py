@@ -10,25 +10,31 @@ class MassReplacer:
         self._pattern = re.compile("|".join(self._escaped_corpus.keys()))
 
     def replace(self, text: str) -> str:
-        return self._pattern.sub(lambda match: self._escaped_corpus[re.escape(match.group(0))], text)
+        return self._pattern.sub(
+            lambda match: self._escaped_corpus[re.escape(match.group(0))], text
+        )
 
 
 wrapper = TextWrapper()
 
-normalizer = MassReplacer({
-    "“": "\"",
-    "”": "\"",
-    "‘": "\'",
-    "’": "\'",
-})
+normalizer = MassReplacer(
+    {
+        "“": '"',
+        "”": '"',
+        "‘": "'",
+        "’": "'",
+    }
+)
 
-placeholder = MassReplacer({
-    "Q": "O",
-    "X": "O",
-    "Z": "O",
-    "—": "\u00A0- ",
-    "–": "-",
-})
+placeholder = MassReplacer(
+    {
+        "Q": "O",
+        "X": "O",
+        "Z": "O",
+        "—": "\u00A0- ",
+        "–": "-",
+    }
+)
 
 
 def split(text: str, length: int) -> List[str]:

@@ -25,7 +25,9 @@ const Home = () => {
   const [resultData, setResultData] = useState<string>("");
   const [twoStep, setTwoStep] = useState<boolean>(false);
   const [blotReady, setBlotReady] = useState<boolean>(true);
-  const [username, setUsername] = useState<string>(searchParams.get("username") ?? "");
+  const [username, setUsername] = useState<string>(
+    searchParams.get("username") ?? "",
+  );
 
   const webcamRef = useRef<Webcam>(null);
 
@@ -175,7 +177,7 @@ const Home = () => {
     formData.append("line_width", "52");
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/submit-frame`, {
+      const response = await fetch(`http://127.0.0.1:8000/one-and-done`, {
         method: "POST",
         body: formData,
       });
@@ -335,7 +337,7 @@ const Home = () => {
               alert("A username is needed to sample your handwriting!");
               return;
             }
-            navigate(`/sampler?username=${username}`)
+            navigate(`/sampler?username=${username}`);
           }}
         >
           Sample My Handwriting

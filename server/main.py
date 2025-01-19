@@ -3,16 +3,15 @@ import shutil
 from typing import Dict, List, Optional
 
 from fastapi import FastAPI, File, Form, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 from pydantic import BaseModel
 from snowflake import SnowflakeGenerator
-from file import chatgpt
-from scanner.scan import DocScanner
 
-import preprocessing
+import chatgpt
 from handsynth.demo import Hand
+import preprocessing
+from scanner.scan import DocScanner
 
 OUTPUT_DIR = "handsynth_output"
 
@@ -20,7 +19,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Frontend URLs here
+    allow_origins=["http://localhost"],  # Frontend URLs here
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
@@ -55,7 +54,14 @@ class HandwritingSample(BaseModel):
     strokes: List[List[StrokePoint]]
 
 
-def gen_svg_image(lines: List[str], *, bias: float, style: int, stroke_color: str = "black", stroke_width: float = 1):
+def gen_svg_image(
+    lines: List[str],
+    *,
+    bias: float,
+    style: int,
+    stroke_color: str = "black",
+    stroke_width: float = 1,
+):
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
         print(f"Created ${OUTPUT_DIR} directory.")
@@ -90,7 +96,9 @@ def _synthesize(username: str, text: str, bias: float, style: int, line_width: i
     placeholded = preprocessing.placehold(normalized)
     lines = preprocessing.split(placeholded, line_width)
 
-    with open(gen_svg_image(lines, bias=bias, style=new_style), "r", encoding="utf-8") as f:
+    with open(
+        gen_svg_image(lines, bias=bias, style=new_style), "r", encoding="utf-8"
+    ) as f:
         svg_content = f.read()
 
     return {"svg": svg_content}
@@ -106,18 +114,25 @@ def synthesize(inp: SynthesisInput):
     return _synthesize(**dict(inp))
 
 
-@app.post("/submit-frame")
-async def submit_frame(image: UploadFile = File(...), username: Optional[str] = Form(None), bias: float = Form(1), style: int = Form(0), line_width: int = Form(70)):
+@app.post("/one-and-done")
+async def one_and_done(
+    image: UploadFile = File(...),
+    username: Optional[str] = Form(None),
+    bias: float = Form(1),
+    style: int = Form(0),
+    line_width: int = Form(70),
+):
     # Save image to scanner_output
     with open("scanner_output/paper_image.jpg", "wb") as file:
         shutil.copyfileobj(image.file, file)
 
     # Grayscale and make the image look better using scanner import
-    DocScanner(output_dir="scanner_output").scan("scanner_output/paper_image.jpg", output_basename="processed_image.jpg")
+    DocScanner(output_dir="scanner_output").scan(
+        "scanner_output/paper_image.jpg", output_basename="processed_image.jpg"
+    )
 
     # Call ChatGPT to get the answers
-    # answers = chatgpt.query_gpt()
-    answers = """1. According to Gay-Lussac's Law, the pressure of a gas increases with temperature if the volume is constant. In a hot car, the pressure inside the can increases, potentially causing it to burst."""
+    answers = chatgpt.query_gpt()
 
     # Synthesize and return handwriting
     return _synthesize(username, answers, bias, style, line_width)
@@ -130,11 +145,12 @@ async def solve(image: UploadFile = File(...)):
         shutil.copyfileobj(image.file, file)
 
     # Grayscale and make the image look better using scanner import
-    DocScanner(output_dir="scanner_output").scan("scanner_output/paper_image.jpg", output_basename="processed_image.jpg")
+    DocScanner(output_dir="scanner_output").scan(
+        "scanner_output/paper_image.jpg", output_basename="processed_image.jpg"
+    )
 
     # Call ChatGPT to get the answers
-    # answers = chatgpt.query_gpt()
-    answers = """1. According to Gay-Lussac's Law, the pressure of a gas increases with temperature if the volume is constant. In a hot car, the pressure inside the can increases, potentially causing it to burst."""
+    answers = chatgpt.query_gpt()
 
     return {"result": answers}
 
@@ -159,11 +175,7 @@ async def save_handwriting_sample(inp: HandwritingSample):
         last_index = len(stroke) - 1
 
         for i, point in enumerate(stroke):
-            processed.append([
-                point.x,
-                point.y,
-                1.0 if i == last_index else 0.0
-            ])
+            processed.append([point.x, point.y, 1.0 if i == last_index else 0.0])
 
     np_processed: np.ndarray = np.array(processed)
     np_processed -= [*np_processed[0, 0:2], 0]
@@ -179,4 +191,3 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
