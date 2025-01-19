@@ -1,27 +1,38 @@
 import { useEffect, useState, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Webcam from "react-webcam";
+import Switch from "react-switch";
 import { toolkit } from "./blot/src/drawingToolkit/toolkit.js";
 import { createHaxidraw } from "./blot/src/haxidraw/createHaxidraw.js";
 import { createWebSerialBuffer } from "./blot/src/haxidraw/createWebSerialBuffer.js";
-import "./App.css";
+import "./Home.css";
 
 let haxidraw: any = null;
 
-const App = () => {
+const Home = () => {
+  // URL manipulators
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   // States
   const [polylines, setPolylines] = useState<Polylines | null>(null);
   const [svgContent, setSvgContent] = useState<string>("");
   const [error, setError] = useState<string>("");
-  const [resultData, setResultData] = useState<string>(""); // State to store solve result
   const [connectionStatus, setConnectionStatus] =
     useState<string>("Disconnected");
   const [countdown, setCountdown] = useState<number>(0);
   const [hasResult, setHasResult] = useState<boolean>(false);
+  const [resultData, setResultData] = useState<string>("");
+  const [twoStep, setTwoStep] = useState<boolean>(false);
+  const [blotReady, setBlotReady] = useState<boolean>(true);
+  const [username, setUsername] = useState<string>(searchParams.get("username") ?? "");
 
   const webcamRef = useRef<Webcam>(null);
 
   const sleep = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
+
+  /* --------------------------------Blot Code-------------------------------------------------*/
 
   // Handle Drawing
   const draw = async (lines: Polylines) => {
@@ -31,6 +42,8 @@ const App = () => {
     }
 
     try {
+      setBlotReady(false);
+
       await haxidraw.servo(1000); // Pen up
       await haxidraw.goTo(0, 0);
 
@@ -50,6 +63,8 @@ const App = () => {
     } catch (err) {
       setError(`Drawing error: ${(err as Error).message}`);
     }
+
+    setBlotReady(true);
   };
 
   // Convert SVG to Polylines
@@ -76,10 +91,87 @@ const App = () => {
     }
   };
 
-  // Upload to server
-  const uploadFrame = async (file: File) => {
+  // Connect to Haxidraw
+  const connect = async () => {
+    if (!navigator.serial) {
+      alert("Your browser doesn't support the Web Serial API.");
+      return;
+    }
+
+    try {
+      const port = await navigator.serial.requestPort(
+        {} as SerialPortRequestOptions,
+      );
+      const comsBuffer = await createWebSerialBuffer(port);
+      haxidraw = await createHaxidraw(comsBuffer);
+      setConnectionStatus("Connected");
+      setBlotReady(true);
+    } catch {
+      setError("Failed to connect to Haxidraw.");
+    }
+  };
+
+  // Disconnect Haxidraw
+  const disconnect = async () => {
+    if (haxidraw && haxidraw.port) {
+      try {
+        await haxidraw.port.close();
+      } catch (err) {
+        console.error("Disconnect error:", err);
+      }
+    }
+    haxidraw = null;
+    setConnectionStatus("Disconnected");
+  };
+
+  // Disconnect on component mount
+  useEffect(() => {
+    disconnect();
+  }, []);
+
+  /* --------------------------------Front and Back Code-------------------------------------------------*/
+
+  // Countdown and take picture
+  const capture = () => {
+    setCountdown(5);
+
+    const interval = setInterval(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      upload();
+    }, 5000);
+  };
+
+  // Upload to backend
+  const upload = async () => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      if (imageSrc) {
+        const byteString = atob(imageSrc.split(",")[1]);
+        const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0];
+        const arrayBuffer = Uint8Array.from(byteString, (char) =>
+          char.charCodeAt(0),
+        );
+        const blob = new Blob([arrayBuffer], { type: mimeString });
+        const file = new File([blob], "snapshot.png", { type: mimeString });
+
+        if (twoStep) {
+          await runTwoStep(file);
+        } else {
+          await oneStep(file);
+        }
+      }
+    }
+  };
+
+  // One Step
+  const oneStep = async (file: File) => {
     const formData = new FormData();
     formData.append("image", file);
+    formData.append("username", username);
     formData.append("line_width", "52");
 
     try {
@@ -117,38 +209,8 @@ const App = () => {
     }
   };
 
-  // Handle Compute with Countdown
-  const handleCompute = () => {
-    setCountdown(5);
-
-    const interval = setInterval(() => {
-      setCountdown((prev) => prev - 1);
-    }, 1000);
-
-    setTimeout(() => {
-      clearInterval(interval);
-      takeSnapshotAndUpload();
-    }, 5000);
-  };
-
-  // Take Snapshot and Upload
-  const takeSnapshotAndUpload = async () => {
-    if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot();
-      if (imageSrc) {
-        const byteString = atob(imageSrc.split(",")[1]);
-        const mimeString = imageSrc.split(",")[0].split(":")[1].split(";")[0];
-        const arrayBuffer = Uint8Array.from(byteString, (char) =>
-          char.charCodeAt(0),
-        );
-        const blob = new Blob([arrayBuffer], { type: mimeString });
-        const file = new File([blob], "snapshot.png", { type: mimeString });
-        await solve(file);
-      }
-    }
-  };
-
-  const solve = async (file: File) => {
+  // Part of Two Step
+  const runTwoStep = async (file: File) => {
     const formData = new FormData();
     formData.append("image", file);
     formData.append("line_width", "52");
@@ -163,14 +225,9 @@ const App = () => {
 
       const data = await response.json();
 
-      console.log(data.result);
-
       if (data.result) {
         setResultData(data.result); // Save result to state
-
-        // Change the CSS
-        setHasResult(true);
-
+        setHasResult(true); // Hide the webcam and show the result
       } else {
         throw new Error("Result data is missing.");
       }
@@ -179,23 +236,26 @@ const App = () => {
     }
   };
 
-  // Synthesize and print on blot
-  const launchButton = async () => {
-    const textarea = document.querySelector(".result-input") as HTMLTextAreaElement;
+  // Part Two Step to Synthesize and print on blot
+  const synthesizeAndPrint = async () => {
+    const textarea = document.querySelector(
+      ".resultTextarea",
+    ) as HTMLTextAreaElement;
 
     if (!textarea) {
-      console.error("Textarea with class 'result-input' not found.");
+      console.error("Textarea with class 'resultTextarea' not found.");
       return;
     }
-  
+
     // Extract the value from the textarea and create the payload
     const payload = {
+      username,
       text: textarea.value,
-      bias: 1,        // You can adjust these values
-      style: 0,       // according to your requirements
+      bias: 1, // You can adjust these values
+      style: 0, // according to your requirements
       line_width: 70,
     };
-  
+
     try {
       const response = await fetch("http://127.0.0.1:8000/synthesize", {
         method: "POST",
@@ -234,112 +294,92 @@ const App = () => {
     } catch (err) {
       setError(`Upload error: ${(err as Error).message}`);
     }
-    
-  }
-
-  // Connect to Haxidraw
-  const connect = async () => {
-    if (!navigator.serial) {
-      alert("Your browser doesn't support the Web Serial API.");
-      return;
-    }
-
-    try {
-      const port = await navigator.serial.requestPort(
-        {} as SerialPortRequestOptions,
-      );
-      const comsBuffer = await createWebSerialBuffer(port);
-      haxidraw = await createHaxidraw(comsBuffer);
-      setConnectionStatus("Connected");
-    } catch {
-      setError("Failed to connect to Haxidraw.");
-    }
   };
 
-  // Disconnect Haxidraw
-  const disconnect = async () => {
-    if (haxidraw && haxidraw.port) {
-      try {
-        await haxidraw.port.close();
-      } catch (err) {
-        console.error("Disconnect error:", err);
-      }
-    }
-    haxidraw = null;
-    setConnectionStatus("Disconnected");
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setResultData(e.target.value); // Update resultData when the user types
   };
-
-  // Disconnect on component mount
-  useEffect(() => {
-    disconnect();
-  }, []);
 
   return (
     <div className="container">
-      <div className="top-right-toggle">
+      <div className="top-right">
+        <h2>Two Step</h2>
+        <Switch
+          onChange={() => setTwoStep(!twoStep)}
+          checked={twoStep}
+          onColor="#ff4500"
+        ></Switch>
+
         <button
-          className="button warning-button"
+          className="button connect-button"
           onClick={connectionStatus === "Connected" ? disconnect : connect}
         >
           {connectionStatus === "Connected" ? "Disconnect" : "Connect"}
         </button>
       </div>
 
-      <div className="top-left-name">
+      <div className="top-left">
+        <h2>Username</h2>
+        <input
+          className="username-input"
+          type="text"
+          maxLength={12}
+          value={username}
+          onChange={(e) => setUsername(e.target.value.trim())}
+        />
+
         <button
-          className="button name-button"
-          onClick={() => alert("Name Button")}
+          className="button sample-button"
+          onClick={() => {
+            if (username === "") {
+              alert("A username is needed to sample your handwriting!");
+              return;
+            }
+            navigate(`/sampler?username=${username}`)
+          }}
         >
-          Calo and Dominic
+          Sample My Handwriting
         </button>
       </div>
 
-        <div className="innerBox">
-          <div className="everything">
-          <div className={"capture-container" + hasResult}>
-            <div className="webcam-container">
-              <Webcam
-                audio={false}
-                height={600}
-                width={600}
-                ref={webcamRef}
-                screenshotFormat="image/png"
-              />
-              {countdown !== 0 && (
-                <div className="countdown-overlay">
-                  <h1>{countdown}</h1>
-                </div>
-              )}
-            </div>
+      <h1>The Homework Machine</h1>
 
-            <button className="button compute-button" onClick={handleCompute}>
-              Compute
-            </button>
-            </div>
-
-            <div className={"result-container"+hasResult}>
-              <label htmlFor="result-input">Solve Result:</label>
-              <textarea
-                id="result-input"
-                value={resultData}
-                onChange={(e) => setResultData(e.target.value)} // Allow user edits
-                className="result-input"
-              />
-
-              <button className="button launch-button" onClick={launchButton}>
-              Launch
-            </button>   
-            </div>
-
-            </div>
-          <h1>THE HOMEWORK MACHINE</h1>
-        </div>
-            
-
-
+      <div className="innerContainer">
+        {!hasResult ? (
+          <div className="webcamContainer">
+            <Webcam
+              className="webcam"
+              audio={false}
+              ref={webcamRef}
+              forceScreenshotSourceSize
+              screenshotFormat="image/png"
+            />
+            {countdown !== 0 && (
+              <div className="countdown-overlay">
+                <h1>{countdown}</h1>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="resultContainer">
+            <textarea
+              className="resultTextarea"
+              value={resultData}
+              onChange={handleTextareaChange} // Add onChange here
+            />
+          </div>
+        )}
+        {blotReady && (
+          <button
+            className="buttonDoHomework"
+            onClick={hasResult ? synthesizeAndPrint : capture}
+          >
+            {twoStep ? (hasResult ? "Print" : "Capture") : "Do Homework"}
+          </button>
+        )}
       </div>
-      
+    </div>
   );
 };
 
-export default App;
+export default Home;

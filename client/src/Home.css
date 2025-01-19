@@ -1,0 +1,252 @@
+/* Global Styling */
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+/* Base container styling */
+.container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  background-image: url("image.png");
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* Hover effect for buttons */
+.button:hover {
+  transform: scale(1.1);
+  background-color: #d83600;
+}
+
+/* Button Styling */
+.button {
+  font-size: 1.1rem;
+  font-weight: bold;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition:
+    transform 0.3s ease-in-out,
+    background-color 0.3s ease-in-out;
+  text-transform: uppercase;
+}
+
+/* Top buttons styling */
+
+.top-left {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.username-input {
+  border: 3px solid #ff4500;
+  border-radius: 8px;
+  background-color: #1c1c1c;
+  color: white;
+  width: 16rem;
+  padding: 0.5rem;
+  font-size: 1.5rem;
+  box-shadow: 0 0 10px rgba(255, 69, 0, 0.8);
+}
+
+.top-right {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2rem;
+}
+
+.connect-button {
+  position: relative;
+  background-color: #ff4500;
+  color: white;
+  box-shadow: 0 0 10px rgba(255, 69, 0, 0.8);
+}
+
+/* Two Step Enable */
+
+h2 {
+  color: aliceblue;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.5rem;
+}
+
+/* Title */
+h1 {
+  color: aliceblue;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 4rem;
+  margin-top: 8.5rem;
+}
+
+/* Inner Container */
+.innerContainer {
+  position: relative;
+  margin-bottom: 3rem;
+  height: 80%;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10rem;
+}
+
+.webcamContainer {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 20%;
+  height: auto;
+  border: 3px solid #ff4500;
+  border-radius: 2rem;
+  box-shadow:
+    0 0 20px rgba(255, 69, 0, 0.5),
+    0 0 40px rgba(255, 69, 0, 0.3);
+  transition: all 0.3s ease-in-out;
+}
+
+.webcamContainer:hover {
+  background: radial-gradient(circle, #d80000, #5a0000, #000000);
+  box-shadow:
+    0 0 30px #ff0000,
+    0 0 60px #d80000,
+    0 0 80px #800000;
+  border: 3px solid #800000;
+  transform: scale(1.1);
+  animation: pulse 1s infinite;
+}
+
+.webcam {
+  height: auto;
+  width: 100%;
+  border-radius: 2rem;
+  grid-row-start: 1;
+  grid-column-start: 1;
+}
+
+.countdown-overlay {
+  grid-row-start: 1;
+  grid-column-start: 1;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.countdown-overlay h1 {
+  color: #d80000;
+  font-size: 100px;
+}
+
+.resultContainer {
+  position: relative;
+  width: 50%;
+  height: 100%;
+  border-radius: 5rem;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+}
+
+.resultTextarea {
+  height: 100%;
+  width: 70ch;
+  padding: 1rem;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: aliceblue;
+  background: radial-gradient(circle, #2f2f2f, #1c1c1c);
+  border: 3px solid #ff4500;
+  border-radius: 2rem;
+  box-shadow:
+    0 0 20px rgba(255, 69, 0, 0.5),
+    0 0 40px rgba(255, 69, 0, 0.3);
+  resize: none; /* Disable resizing */
+  overflow-y: auto; /* Enable scrolling if content overflows */
+  text-align: left;
+  line-height: 1.5;
+  transition: all 0.3s ease-in-out;
+}
+
+.resultTextarea:focus {
+  outline: none;
+  border: 3px solid #ff6347;
+  box-shadow:
+    0 0 30px rgba(255, 99, 71, 0.8),
+    0 0 60px rgba(255, 99, 71, 0.6);
+  background: radial-gradient(circle, #1c1c1c, #2f2f2f);
+}
+
+.buttonDoHomework {
+  position: relative;
+  width: 30%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 3px solid #ff4500;
+  background: radial-gradient(circle, #ff6347, #d80000, #5a0000);
+  box-shadow:
+    0 0 20px #ff4500,
+    0 0 40px #ff2400,
+    0 0 60px #ff0000;
+  color: white;
+  font-family: "Arial", sans-serif;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.buttonDoHomework:hover {
+  background: radial-gradient(circle, #d80000, #5a0000, #000000);
+  box-shadow:
+    0 0 30px #ff0000,
+    0 0 60px #d80000,
+    0 0 80px #800000;
+  border: 3px solid #800000;
+  transform: scale(1.1);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 30px #ff4500,
+      0 0 60px #ff2400,
+      0 0 80px #ff0000;
+  }
+  50% {
+    box-shadow:
+      0 0 40px #d80000,
+      0 0 80px #800000,
+      0 0 100px #5a0000;
+  }
+}

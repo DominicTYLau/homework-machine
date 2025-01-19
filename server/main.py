@@ -1,19 +1,18 @@
 import os
 import shutil
-from typing import List
+from typing import Dict, List, Optional
 
 from fastapi import FastAPI, File, Form, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+import numpy as np
 from pydantic import BaseModel
 from snowflake import SnowflakeGenerator
-# from file import chatgpt
+from file import chatgpt
 from scanner.scan import DocScanner
 
-
 import preprocessing
-# from handsynth.demo import Hand
+from handsynth.demo import Hand
 
 OUTPUT_DIR = "handsynth_output"
 
@@ -27,12 +26,16 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-# hand = Hand(max_line_length=100)
+hand = Hand(max_line_length=100)
 
-snow_gen = SnowflakeGenerator(0)
+handsynth_id_gen = SnowflakeGenerator(0)
+user_id_gen = SnowflakeGenerator(1)
+
+user_db: Dict[str, int] = {}
 
 
 class SynthesisInput(BaseModel):
+    username: Optional[str] = None
     text: str
     # Below parameters are for testing only
     bias: float = 1
@@ -40,10 +43,16 @@ class SynthesisInput(BaseModel):
     line_width: int = 70
 
 
-class Test(BaseModel):
-    bias: float = Form(1)
-    style: int = Form(0)
-    line_width: int = Form(70)
+class StrokePoint(BaseModel):
+    x: int
+    y: int
+    t: Optional[int] = None
+
+
+class HandwritingSample(BaseModel):
+    username: str
+    transcription: str
+    strokes: List[List[StrokePoint]]
 
 
 def gen_svg_image(lines: List[str], *, bias: float, style: int, stroke_color: str = "black", stroke_width: float = 1):
@@ -52,8 +61,9 @@ def gen_svg_image(lines: List[str], *, bias: float, style: int, stroke_color: st
         print(f"Created ${OUTPUT_DIR} directory.")
 
     lines_n = len(lines)
-    output_file_path = os.path.join(OUTPUT_DIR, f"output_{next(snow_gen)}.svg")
+    output_file_path = os.path.join(OUTPUT_DIR, f"output_{next(handsynth_id_gen)}.svg")
 
+    print("Synthesizing with style", style)
     print(lines_n, " lines received:\n\n", "\n".join(lines), sep="", end="\n\n")
 
     hand.write(
@@ -70,12 +80,17 @@ def gen_svg_image(lines: List[str], *, bias: float, style: int, stroke_color: st
     return output_file_path
 
 
-def _synthesize(text: str, bias: float, style: int, line_width: int):
+def _synthesize(username: str, text: str, bias: float, style: int, line_width: int):
+    new_style = style
+
+    if username is not None and username in user_db:
+        new_style = user_db[username]
+
     normalized = preprocessing.normalize(text)
     placeholded = preprocessing.placehold(normalized)
     lines = preprocessing.split(placeholded, line_width)
 
-    with open(gen_svg_image(lines, bias=bias, style=style), "r", encoding="utf-8") as f:
+    with open(gen_svg_image(lines, bias=bias, style=new_style), "r", encoding="utf-8") as f:
         svg_content = f.read()
 
     return {"svg": svg_content}
@@ -88,12 +103,11 @@ def index():
 
 @app.post("/synthesize")
 def synthesize(inp: SynthesisInput):
-    # return _synthesize(**dict(inp))
-    return {"svg": svg_content}
+    return _synthesize(**dict(inp))
 
 
 @app.post("/submit-frame")
-async def submit_frame(image: UploadFile = File(...), line_width: int = Form(70)):
+async def submit_frame(image: UploadFile = File(...), username: Optional[str] = Form(None), bias: float = Form(1), style: int = Form(0), line_width: int = Form(70)):
     # Save image to scanner_output
     with open("scanner_output/paper_image.jpg", "wb") as file:
         shutil.copyfileobj(image.file, file)
@@ -106,10 +120,11 @@ async def submit_frame(image: UploadFile = File(...), line_width: int = Form(70)
     answers = """1. According to Gay-Lussac's Law, the pressure of a gas increases with temperature if the volume is constant. In a hot car, the pressure inside the can increases, potentially causing it to burst."""
 
     # Synthesize and return handwriting
-    return _synthesize(answers, 1, 0, line_width)
+    return _synthesize(username, answers, bias, style, line_width)
+
 
 @app.post("/solve")
-async def solve(image: UploadFile = File(...), line_width: int = Form(70)):
+async def solve(image: UploadFile = File(...)):
     # Save image to scanner_output
     with open("scanner_output/paper_image.jpg", "wb") as file:
         shutil.copyfileobj(image.file, file)
@@ -121,8 +136,44 @@ async def solve(image: UploadFile = File(...), line_width: int = Form(70)):
     # answers = chatgpt.query_gpt()
     answers = """1. According to Gay-Lussac's Law, the pressure of a gas increases with temperature if the volume is constant. In a hot car, the pressure inside the can increases, potentially causing it to burst."""
 
-    # Synthesize and return handwriting
-    return JSONResponse(content={"result": answers})
+    return {"result": answers}
+
+
+@app.post("/save-handwriting-sample")
+async def save_handwriting_sample(inp: HandwritingSample):
+    if inp.username in user_db:
+        user_id = user_db[inp.username]
+    else:
+        user_id = next(user_id_gen)
+        user_db[inp.username] = user_id
+
+    char_path = os.path.join("styles", f"style-{user_id}-chars.npy")
+    strokes_path = os.path.join("styles", f"style-{user_id}-strokes.npy")
+
+    chars_dtype = f"|S{len(inp.transcription)}"
+    np_chars = np.array(inp.transcription.encode(), dtype=chars_dtype)
+
+    processed = []
+
+    for stroke in inp.strokes:
+        last_index = len(stroke) - 1
+
+        for i, point in enumerate(stroke):
+            processed.append([
+                point.x,
+                point.y,
+                1.0 if i == last_index else 0.0
+            ])
+
+    np_processed: np.ndarray = np.array(processed)
+    np_processed -= [*np_processed[0, 0:2], 0]
+    np_processed *= 200 / np_processed.max()
+
+    offsets: np.ndarray = np.diff(np_processed, axis=0, prepend=[[0, 0, 0]])
+
+    np.save(char_path, np_chars)
+    np.save(strokes_path, offsets)
+
 
 if __name__ == "__main__":
     import uvicorn

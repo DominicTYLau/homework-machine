@@ -28,6 +28,9 @@ venv
 # Handsynth output files
 handsynth_output
 
+# Prime sequences for handsynth
+styles
+
 # Scanner output files
 scanner_output
 

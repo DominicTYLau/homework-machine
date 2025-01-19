@@ -1,0 +1,26 @@
+#root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  position: relative;
+}
+canvas {
+  border: 1px solid black;
+}
+#prompt {
+  margin-bottom: 20px;
+}
+.buttons {
+  margin-top: 20px;
+}
+#counter {
+  margin-top: 10px;
+}
+#redirectBtn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
