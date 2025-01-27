@@ -9,7 +9,6 @@ const Sampler: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [strokes, setStrokes] = useState<any[][]>([]);
   const [currentStroke, setCurrentStroke] = useState<any[]>([]);
-  const [completedPrompts, setCompletedPrompts] = useState<any[]>([]);
   const prompt = "two-twenty carried, for him";
   const [drawing, setDrawing] = useState(false);
 

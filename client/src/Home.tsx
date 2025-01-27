@@ -14,10 +14,12 @@ const Home = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // States
+  // Old states
   const [polylines, setPolylines] = useState<Polylines | null>(null);
   const [svgContent, setSvgContent] = useState<string>("");
   const [error, setError] = useState<string>("");
+
+  // States
   const [connectionStatus, setConnectionStatus] =
     useState<string>("Disconnected");
   const [countdown, setCountdown] = useState<number>(0);

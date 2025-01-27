@@ -170,7 +170,7 @@ h1 {
 }
 
 .resultTextarea {
-  height: 100%;
+  height: 90%;
   width: 70ch;
   padding: 1rem;
   font-family: "Courier New", Courier, monospace;
@@ -212,7 +212,7 @@ h1 {
     0 0 60px #ff0000;
   color: white;
   font-family: "Arial", sans-serif;
-  font-size: 1.5rem;
+  font-size:3rem;
   font-weight: bold;
   text-transform: uppercase;
   text-align: center;
