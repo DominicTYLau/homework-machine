@@ -2,6 +2,10 @@
 
 The Homework Machine is a 2D plotter that automates solving and writing homework with a personalized touch. Users can upload homework images via a frontend interface, captured using their phone and connected through DroidCam and OBS for a virtual camera feed. Its standout feature is handwriting synthesis, which mimics handwriting styles, including a primed synthesis option for users to upload their own handwriting for an authentic, customized result.
 
+## Demo
+
+[![Homework Machine Demo](https://img.youtube.com/vi/rU70mWzGQT0/0.jpg)](https://youtu.be/rU70mWzGQT0)
+
 ## How to Set Up
 
 ### Backend
